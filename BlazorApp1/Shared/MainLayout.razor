@@ -1,0 +1,152 @@
+﻿@inherits LayoutComponentBase
+@using System.Threading;
+@using System.Threading.Tasks;
+@using System.Linq;
+@using System.Collections.Generic;
+
+<input  type="button" style="width:100px;" @onclick="Order"/>
+
+<input type="button" style="width:100px;" @onclick="Randomize" />
+
+
+<div style="width:100%;height:500px;background-color:black;position:relative">
+    @for (var i = 0; i < Columns.Length; i ++)
+    {
+        <div style="height:@Columns[i].Ratio.RelativePercentValue%;width:1%;background-color:rgb(@Columns[i].Ratio.AbsoluteValue,0,0);bottom:0px;position:absolute;left:@i%"></div>
+    }
+
+</div>
+
+@code {
+
+    class Column
+    {
+        public IRatio Ratio { get; }
+
+        public Column(IRatio ratio)
+        {
+            Ratio = ratio;
+        }
+    }
+
+    interface IRatio
+    {
+        public int AbsoluteValue { get; }
+
+        public int RelativePercentValue { get; }
+    }
+
+    class ColorRatio : IRatio
+    {
+        private int _ratio { get; }
+
+        private const int MaxValue = 255;
+
+        public ColorRatio(int absoluteValue)
+        {
+            _ratio = absoluteValue;
+        }
+
+        public int AbsoluteValue { get { return _ratio; } }
+
+        public int RelativePercentValue { get { return 100 * _ratio / 255; } }
+    }
+
+    void Order()
+    {
+        //for (var i = 0; i < Columns.Count; i ++)
+        //{
+        //    for (var j = 0; j < Columns.Count-1; j++)
+        //    {
+        //        if (Columns[j].Ratio.AbsoluteValue > Columns[j + 1].Ratio.AbsoluteValue)
+        //        {
+        //            int tempRatio = Columns[j].Ratio.AbsoluteValue;
+        //            Columns[j] = new Column(Columns[j + 1].Ratio);
+        //            Columns[j + 1] = new Column(new ColorRatio(tempRatio));
+        //        }
+        //    }
+        //}
+
+
+        _columns = MergeSort(Columns);
+    }
+
+    Column[] MergeSort(Column[] array)
+    {
+        int arrayLeftPartSize = (int)Math.Ceiling(array.Length / 2d);
+        Column[] left = array.Take(arrayLeftPartSize).ToArray();
+        if (arrayLeftPartSize < array.Length)
+        {
+            Column[] right = array.Skip(arrayLeftPartSize).Take(array.Length - arrayLeftPartSize).ToArray();
+
+            left = MergeSort(left);
+            right = MergeSort(right);
+
+            return Merge(left, right);
+        }
+        else
+        {
+            return left;
+        }
+    }
+
+    Column[] Merge(Column[] left, Column[] right)
+    {
+        Column[] result = new Column[] { };
+        result = new Column[left.Length + right.Length];
+        int i = 0;
+        int j = 0;
+        int k = 0;
+        while (i < left.Length && j < right.Length)
+        {
+            if (left[i].Ratio.AbsoluteValue <= right[j].Ratio.AbsoluteValue)
+            {
+                result[k++] = left[i++];
+            }
+            else
+            {
+                result[k++] = right[j++];
+            }
+        }
+
+        while (i < left.Length)
+        {
+            result[k++] = left[i++];
+        }
+
+        while (j < right.Length)
+        {
+            result[k++] = right[j++];
+        }
+
+        return result;
+    }
+
+
+    void Randomize()
+    {
+        _columns = null;
+    }
+
+    Column[] _columns;
+
+    Column[] Columns
+    {
+        get
+        {
+            if (_columns == null)
+            {
+                _columns = new Column[] { };
+                _columns = new Column[100];
+                Random rand = new Random();
+
+                for (var i = 0; i < 100; i++)
+                {
+                    _columns[i] = new Column(new ColorRatio(rand.Next(1, 255)));
+                }
+            }
+
+            return _columns;
+        }
+    }
+}
